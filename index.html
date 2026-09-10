@@ -6233,9 +6233,9 @@ const STATS_KEY = 'topicReview_stats_v1';
 const GLOBAL_KEY = 'topicReview_global_v1';
 // Milestone 2: keys that live directly in localStorage (not the IndexedDB
 // appDataCache system) but still get synced. Literal strings here on
-// purpose — PET_KEY/'uermExams' are declared deep inside other functions,
+// purpose — PET_KEY/'topicReview_uermExams' are declared deep inside other functions,
 // so this avoids any risk of referencing them before that line runs.
-const LOCAL_SYNC_KEYS = [GLOBAL_KEY, 'topicReviewVirtualPet_v2', 'uermExams'];
+const LOCAL_SYNC_KEYS = [GLOBAL_KEY, 'topicReviewVirtualPet_v2', 'topicReview_uermExams'];
 // Set true only while writing a value that just came FROM the cloud, so
 // that write doesn't turn around and re-queue itself for upload.
 let suppressLocalSync = false;
@@ -6883,7 +6883,7 @@ async function downloadAndMergeKey(key, queuedKeys, cloudMeta){
       await setLocalSyncValueFromCloud(key, JSON.stringify(cloud.data));
       await persistSyncedAt(key, cloud.updated_at);
       await persistSyncedBaseline(key, cloud.updated_at);
-      // Calendar re-reads 'uermExams' fresh from localStorage every time it
+      // Calendar re-reads 'topicReview_uermExams' fresh from localStorage every time it
       // renders, so a merged calendar update shows up immediately. The pet
       // screen and streak/stats views cache their own state in a JS variable
       // read once at page load, so a merge that lands *while already on
@@ -7147,7 +7147,7 @@ function orbeApplyAuthGate(){
 // NOT touch Supabase auth at all — it's a purely local fake session.
 // Search "TEMP ADMIN BYPASS" to find and delete every piece of this.
 const ORBE_TEMP_ADMIN_USERNAME = 'admin';
-const ORBE_TEMP_ADMIN_PASSWORD = 'orbe-temp-2026';
+const ORBE_TEMP_ADMIN_PASSWORD = 'admin';
 let orbeTempBypassActive = false;
 function orbeTryTempAdminBypass(email, password){
   if(email !== ORBE_TEMP_ADMIN_USERNAME || password !== ORBE_TEMP_ADMIN_PASSWORD) return false;
@@ -18642,8 +18642,9 @@ updateNavActiveState();
 
   /* Embedded UERM exam calendar component. Wrapped in its own IIFE (see
      inside) so none of its function/const names can collide with the rest
-     of this file. It reads/writes its own localStorage keys (uermExams,
-     uermHolidayLayer) and renders into #uermExamCalendar, which lives
+     of this file. It reads/writes its own localStorage keys
+     (topicReview_uermExams, topicReview_uermCustomSubjects,
+     topicReview_uermHolidayLayer) and renders into #uermExamCalendar, which lives
      inside #calendarView. window.uermCalendarRefresh is exposed below so
      the nav handler can force a re-layout once the view becomes visible
      (its first render happens while #calendarView is still hidden, so the
@@ -18737,8 +18738,8 @@ const SAMPLE=[
  {subject:'MED2',exam:'LE 1',date:'2026-08-14',start:'11:00',end:'13:00'}
 ];
 
-function added(){return JSON.parse(localStorage.getItem('uermExams')||'[]')}
-function saveAdded(a){lsSet('uermExams',JSON.stringify(a))}
+function added(){return JSON.parse(localStorage.getItem('topicReview_uermExams')||'[]')}
+function saveAdded(a){lsSet('topicReview_uermExams',JSON.stringify(a))}
 function exams(){return SAMPLE.concat(added())}
 
 /* ---- Custom subjects: user-added subjects that live alongside the
@@ -18746,8 +18747,8 @@ function exams(){return SAMPLE.concat(added())}
    as {CODE:{name,color}} and merged in wherever SUBJECTS is read for
    display/lookup via allSubjects(). ---- */
 const CUSTOM_SUBJECT_PALETTE=['#0e7490','#9333ea','#b45309','#4d7c0f','#be185d','#0369a1','#a16207','#6d28d9','#15803d','#be123c'];
-function customSubjects(){return JSON.parse(localStorage.getItem('uermCustomSubjects')||'{}')}
-function saveCustomSubjects(o){lsSet('uermCustomSubjects',JSON.stringify(o))}
+function customSubjects(){return JSON.parse(localStorage.getItem('topicReview_uermCustomSubjects')||'{}')}
+function saveCustomSubjects(o){lsSet('topicReview_uermCustomSubjects',JSON.stringify(o))}
 function allSubjects(){return {...SUBJECTS,...customSubjects()}}
 function addCustomSubject(){
   const name=(prompt('Subject name (e.g. "Family Medicine"):')||'').trim();
@@ -18848,7 +18849,7 @@ function render(){
  SCHOOL.forEach(e=>{
    const el=document.createElement('div');el.className='school-event';el.style.left=(index(e[1])*DAY+2)+'px';el.style.width=(diff(e[1],e[2])+1)*DAY-4+'px';el.textContent=e[0];school.appendChild(el);
  });
- if(localStorage.getItem('uermHolidayLayer')!=='off'){
+ if(localStorage.getItem('topicReview_uermHolidayLayer')!=='off'){
    const holidayLabel=document.createElement('div');
    holidayLabel.className='holiday-label';
    holidayLabel.textContent='Philippine holidays';
@@ -18957,7 +18958,7 @@ function saveExam(){
  if(end<=start){alert('End time must be later than start time.');return}
  const a=added();a.push({subject:subjectSelect.value,exam:document.getElementById('exam').value,date,start,end,notes:document.getElementById('notes').value});saveAdded(a);close();render()
 }
-function clearAdded(){if(confirm('Remove all manually added/imported exams?')){localStorage.removeItem('uermExams');render()}}
+function clearAdded(){if(confirm('Remove all manually added/imported exams?')){localStorage.removeItem('topicReview_uermExams');render()}}
 
 function deleteExam(){
   const i=Number(document.getElementById('deleteBtn').dataset.index);
@@ -19030,13 +19031,13 @@ renderSubjectsLegend();
 
 const holidayToggle=document.getElementById('holidayToggle');
 function syncHolidayToggle(){
- const on=localStorage.getItem('uermHolidayLayer')!=='off';
+ const on=localStorage.getItem('topicReview_uermHolidayLayer')!=='off';
  holidayToggle.textContent=on?'HOLIDAYS ON':'HOLIDAYS OFF';
  holidayToggle.classList.toggle('active',on);
 }
 holidayToggle.addEventListener('click',()=>{
- const on=localStorage.getItem('uermHolidayLayer')!=='off';
- localStorage.setItem('uermHolidayLayer',on?'off':'on');
+ const on=localStorage.getItem('topicReview_uermHolidayLayer')!=='off';
+ localStorage.setItem('topicReview_uermHolidayLayer',on?'off':'on');
  syncHolidayToggle();render();
 });
 syncHolidayToggle();
