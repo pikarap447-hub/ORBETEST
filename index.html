@@ -410,7 +410,7 @@ transition:background var(--transition-normal), color var(--transition-normal), 
     align-items:center;
     min-width:0;
     width:100%;
-    /* The zoom-controls script (see 'topicReviewScale' handling) always
+    /* The zoom-controls script (see 'orbguideScale' handling) always
        applies an inline transform:scale(...) to this element, even at the
        default 1.0 — and any transform creates a new stacking context. An
        earlier attempt to fix that gave .app-shell itself z-index:9991,
@@ -6224,42 +6224,42 @@ const $ = id => document.getElementById(id);
 const tableBody = document.getElementById('tableBody');
 
 /* ---- Local library & stats (all data stays in this browser's localStorage) ---- */
-const SETS_KEY = 'topicReview_sets_v1';
-const FOLDER_SORT_KEY = 'topicReview_folderSort_v1';
-const FOLDER_GROUP_KEY = 'topicReview_folderGroup_v1'; // 'subject' | 'le' — which dimension the landing folder grid is grouped by
-const SET_SORT_LE_KEY = 'topicReview_setSortLE_v1'; // sort mode used inside an LE folder (Topic number / Last played / A–Z)
-const TOPIC_CARD_SORT_DIR_KEY = 'topicReview_topicCardSortDir_v1'; // 'asc' | 'desc' — Topic # direction inside a Topic Cards sub-folder
-const STATS_KEY = 'topicReview_stats_v1';
-const GLOBAL_KEY = 'topicReview_global_v1';
+const SETS_KEY = 'orbguide_sets_v1';
+const FOLDER_SORT_KEY = 'orbguide_folderSort_v1';
+const FOLDER_GROUP_KEY = 'orbguide_folderGroup_v1'; // 'subject' | 'le' — which dimension the landing folder grid is grouped by
+const SET_SORT_LE_KEY = 'orbguide_setSortLE_v1'; // sort mode used inside an LE folder (Topic number / Last played / A–Z)
+const TOPIC_CARD_SORT_DIR_KEY = 'orbguide_topicCardSortDir_v1'; // 'asc' | 'desc' — Topic # direction inside a Topic Cards sub-folder
+const STATS_KEY = 'orbguide_stats_v1';
+const GLOBAL_KEY = 'orbguide_global_v1';
 // Milestone 2: keys that live directly in localStorage (not the IndexedDB
 // appDataCache system) but still get synced. Literal strings here on
-// purpose — PET_KEY/'topicReview_uermExams' are declared deep inside other functions,
+// purpose — PET_KEY/'orbguide_uermExams' are declared deep inside other functions,
 // so this avoids any risk of referencing them before that line runs.
-const LOCAL_SYNC_KEYS = [GLOBAL_KEY, 'topicReviewVirtualPet_v2', 'topicReview_uermExams'];
+const LOCAL_SYNC_KEYS = [GLOBAL_KEY, 'orbguideVirtualPet_v2', 'orbguide_uermExams'];
 // Set true only while writing a value that just came FROM the cloud, so
 // that write doesn't turn around and re-queue itself for upload.
 let suppressLocalSync = false;
 let activeSetId = null;
 let pendingAlgorithm = false; // true when the table's current cards were generated from the "Paste an algorithm" tab
-const BG_KEY = 'topicReview_bg_v1';
-const BG_TYPE_KEY = 'topicReview_bgType_v1';
-const PALETTE_KEY = 'topicReview_palette_v1';
-const BG_BLUR_KEY = 'topicReview_bgBlur_v1';
-const BG_BRIGHTNESS_KEY = 'topicReview_bgBrightness_v1';
-const CARD_OPACITY_KEY = 'topicReview_cardOpacity_v1';
+const BG_KEY = 'orbguide_bg_v1';
+const BG_TYPE_KEY = 'orbguide_bgType_v1';
+const PALETTE_KEY = 'orbguide_palette_v1';
+const BG_BLUR_KEY = 'orbguide_bgBlur_v1';
+const BG_BRIGHTNESS_KEY = 'orbguide_bgBrightness_v1';
+const CARD_OPACITY_KEY = 'orbguide_cardOpacity_v1';
 function applyCardOpacity(pct){
   document.documentElement.style.setProperty('--card-alpha', (pct / 100));
 }
-const SESSIONS_KEY = 'topicReview_sessions_v1';
-const CASE_PROGRESS_KEY = 'topicReview_caseProgress_v1';
-const POMODORO_KEY = 'topicReview_pomodoro_v1';
+const SESSIONS_KEY = 'orbguide_sessions_v1';
+const CASE_PROGRESS_KEY = 'orbguide_caseProgress_v1';
+const POMODORO_KEY = 'orbguide_pomodoro_v1';
 // Learning-engine data: a bounded per-attempt event log, plus the derived
 // per-card record computed from it (mastery, review scheduling, etc).
 // See the "LEARNING ENGINE" block further down for everything that reads
 // and writes these two keys.
-const ATTEMPTS_KEY = 'topicReview_attempts_v1';
-const LEARNING_KEY = 'topicReview_learning_v1';
-const INTERVENTIONS_KEY = 'topicReview_interventions_v1'; // pre/post/delayed targeted-practice tracking
+const ATTEMPTS_KEY = 'orbguide_attempts_v1';
+const LEARNING_KEY = 'orbguide_learning_v1';
+const INTERVENTIONS_KEY = 'orbguide_interventions_v1'; // pre/post/delayed targeted-practice tracking
 const APP_DATA_KEYS = [SETS_KEY, STATS_KEY, SESSIONS_KEY, CASE_PROGRESS_KEY, POMODORO_KEY, ATTEMPTS_KEY, LEARNING_KEY, INTERVENTIONS_KEY];
 // Cloud sync Milestone 2 scope: everything in APP_DATA_KEYS (stats,
 // sessions, case progress, pomodoro, attempts, learning/mastery,
@@ -6281,7 +6281,7 @@ const SYNC_KEYS = [...APP_DATA_KEYS, ...LOCAL_SYNC_KEYS];
    A small in-memory cache keeps the rest of the app synchronous, so the
    existing quiz/deck code does not need to await every read. Existing
    localStorage data is migrated automatically on first load. */
-const APP_DATA_DB = 'TopicReviewDB';
+const APP_DATA_DB = 'OrbGuideDB';
 const APP_DATA_STORE = 'appStore';
 // Cloud-sync bookkeeping: one row per pending data_key waiting to be pushed
 // to Supabase (offline queue), keyed by the data_key itself so re-queuing
@@ -6464,13 +6464,13 @@ let currentAccessToken = null; // kept in sync with currentUser so a keepalive f
 // ---- Egress diagnostics (dev-only, off by default) ----
 // Not meant for production users — it's a way to see, from the browser
 // console, which operation categories are actually pulling data down.
-// Enable from the console with:  localStorage.setItem('topicReview_egressDebug','1')
+// Enable from the console with:  localStorage.setItem('orbguide_egressDebug','1')
 // then reload; disable the same way with '0' (or just clear the key).
 // Nothing here is sent anywhere or shown in the UI — it's console.table only.
 let _egressDebugOn = null;
 function egressDebugEnabled(){
   if(_egressDebugOn === null){
-    try{ _egressDebugOn = localStorage.getItem('topicReview_egressDebug') === '1'; }
+    try{ _egressDebugOn = localStorage.getItem('orbguide_egressDebug') === '1'; }
     catch(e){ _egressDebugOn = false; }
   }
   return _egressDebugOn;
@@ -6483,9 +6483,9 @@ function logEgress(category, table, op, meta){
   if(_egressLog.length > 500) _egressLog.shift();
   console.log('[egress]', category, table, op, meta || '');
 }
-// Call from the console: topicReviewEgressReport()
-window.topicReviewEgressReport = function(){
-  if(!egressDebugEnabled()){ console.log('Egress debug is off. Enable with localStorage.setItem(\'topicReview_egressDebug\',\'1\') and reload.'); return; }
+// Call from the console: orbguideEgressReport()
+window.orbguideEgressReport = function(){
+  if(!egressDebugEnabled()){ console.log('Egress debug is off. Enable with localStorage.setItem(\'orbguide_egressDebug\',\'1\') and reload.'); return; }
   console.table(_egressLog);
   const byCategory = {};
   _egressLog.forEach(e => { byCategory[e.category] = (byCategory[e.category]||0) + 1; });
@@ -6883,7 +6883,7 @@ async function downloadAndMergeKey(key, queuedKeys, cloudMeta){
       await setLocalSyncValueFromCloud(key, JSON.stringify(cloud.data));
       await persistSyncedAt(key, cloud.updated_at);
       await persistSyncedBaseline(key, cloud.updated_at);
-      // Calendar re-reads 'topicReview_uermExams' fresh from localStorage every time it
+      // Calendar re-reads 'orbguide_uermExams' fresh from localStorage every time it
       // renders, so a merged calendar update shows up immediately. The pet
       // screen and streak/stats views cache their own state in a JS variable
       // read once at page load, so a merge that lands *while already on
@@ -8784,7 +8784,7 @@ async function importCommunitySet(communitySetId){
 // array, for every signed-in client. That scales egress with deck size ×
 // connected users. Keep the same badge behavior using a tiny latest-row
 // metadata check instead; no schema/database change is required.
-const COMMUNITY_LAST_SEEN_KEY = 'topicReview_communityLastSeen';
+const COMMUNITY_LAST_SEEN_KEY = 'orbguide_communityLastSeen';
 const COMMUNITY_NEW_CHECK_MS = 5 * 60 * 1000;
 let communityNewCheckTimer = null;
 let communityNewCheckInFlight = false;
@@ -10729,7 +10729,7 @@ const MAX_ATTEMPTS = 4000;        // bounded log so storage doesn't grow forever
 const MAX_RECENT_PER_CARD = 20;   // ring buffer used for consistency/recency/speed
 const RETENTION_MIN_SAMPLE = 3;   // don't report a retention % from fewer re-encounters than this
 const CONFUSION_MIN_ERRORS = 3;   // don't call a distractor "recurring" from fewer wrong picks than this
-const CONFIDENCE_ENABLED_KEY = 'topicReview_confidenceEnabled_v1';
+const CONFIDENCE_ENABLED_KEY = 'orbguide_confidenceEnabled_v1';
 
 function loadAttempts(){ try{ return JSON.parse(appDataCache[ATTEMPTS_KEY] || 'null') || []; }catch(e){ return []; } }
 function saveAttempts(list){
@@ -11735,7 +11735,7 @@ function renderLearningDashboardSections(allTrackedCards, dash){
 /* ---- Background image + auto color palette (all local, no upload anywhere) ---- */
 
 /* IndexedDB Wrapper to bypass the 5MB localStorage limit for large animated backgrounds */
-const DB_NAME = 'TopicReviewDB';
+const DB_NAME = 'OrbGuideDB';
 function getDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 3);
@@ -12022,10 +12022,10 @@ $('cardOpacitySlider').oninput = e => {
 })();
 
 /* ---- Related image on exam tip (Google Custom Search — real photos, no AI) ---- */
-const IMG_ENABLED_KEY = 'topicReview_imgEnabled_v1';
-const IMG_KEY_KEY = 'topicReview_imgApiKey_v1';
-const IMG_CX_KEY = 'topicReview_imgCx_v1';
-const IMG_CACHE_KEY = 'topicReview_imgCache_v1';
+const IMG_ENABLED_KEY = 'orbguide_imgEnabled_v1';
+const IMG_KEY_KEY = 'orbguide_imgApiKey_v1';
+const IMG_CX_KEY = 'orbguide_imgCx_v1';
+const IMG_CACHE_KEY = 'orbguide_imgCache_v1';
 let imgFeatureEnabled = false;
 (function initImgSettings(){
   try{ imgFeatureEnabled = lsGet(IMG_ENABLED_KEY) === '1'; }catch(e){}
@@ -13836,7 +13836,7 @@ function requeue(card){
   queue.splice(pos, 0, card);
 }
 
-const SHUFFLE_KEY = 'topicReview_shuffleMode_v1';
+const SHUFFLE_KEY = 'orbguide_shuffleMode_v1';
 let shuffleEnabled = true;
 (function initShuffleToggle(){
   try{
@@ -13856,8 +13856,8 @@ function orderedQueue(cardArr){
 }
 
 /* ---- Brain breaks: pause the quiz every N cards for a short breather ---- */
-const BRAINBREAK_ENABLED_KEY = 'topicReview_brainBreakEnabled_v1';
-const BRAINBREAK_INTERVAL_KEY = 'topicReview_brainBreakInterval_v1';
+const BRAINBREAK_ENABLED_KEY = 'orbguide_brainBreakEnabled_v1';
+const BRAINBREAK_INTERVAL_KEY = 'orbguide_brainBreakInterval_v1';
 // (brainBreakEnabled / brainBreakInterval / cardsSinceBreak are declared
 // earlier in the script, before showLanding() runs — see top of file.)
 
@@ -14296,11 +14296,11 @@ async function collectBackupData(){
   // came back. (Referenced by literal key here, not by the `PET_KEY`
   // identifier: that constant is declared inside a separate DOMContentLoaded
   // closure further down the file and isn't visible from this function.)
-  [BRAINBREAK_ENABLED_KEY, BRAINBREAK_INTERVAL_KEY, 'topicReviewVirtualPet_v2', 'topicReviewPetRescueIntroSeen'].forEach(k => {
+  [BRAINBREAK_ENABLED_KEY, BRAINBREAK_INTERVAL_KEY, 'orbguideVirtualPet_v2', 'orbguidePetRescueIntroSeen'].forEach(k => {
     const v = lsGet(k);
     if(v !== null && v !== undefined) data[k] = v;
   });
-  return {app: 'topicReview', version: 3, type: 'study-data', exportedAt: new Date().toISOString(), data};
+  return {app: 'orbguide', version: 3, type: 'study-data', exportedAt: new Date().toISOString(), data};
 }
 
 /* ---- Set sharing: export just the chosen set(s), with none of this
@@ -14335,13 +14335,13 @@ function collectSetShareData(ids){
     const {completed, completedAt, communityId, ...rest} = s;
     shared[id] = rest;
   });
-  return {app: 'topicReview', version: 1, type: 'set-share', exportedAt: new Date().toISOString(), data: {sets: shared}};
+  return {app: 'orbguide', version: 1, type: 'set-share', exportedAt: new Date().toISOString(), data: {sets: shared}};
 }
 function shareSetById(id){
   const sets = loadSets();
   const s = sets[id];
   if(!s) return;
-  downloadJSON(collectSetShareData([id]), `topic-review-set-${slugify(s.name)}`);
+  downloadJSON(collectSetShareData([id]), `orbguide-set-${slugify(s.name)}`);
 }
 
 async function collectBackgroundBackup(){
@@ -14354,7 +14354,7 @@ async function collectBackgroundBackup(){
     const v = lsGet(k);
     if(v !== null && v !== undefined) data[k] = v;
   });
-  return {app: 'topicReview', version: 1, type: 'background', exportedAt: new Date().toISOString(), data};
+  return {app: 'orbguide', version: 1, type: 'background', exportedAt: new Date().toISOString(), data};
 }
 
 /* ===== JS-12 BACKUP / IMPORT / EXPORT ===== */
@@ -14365,7 +14365,7 @@ $('exportDataBtn').onclick = async () => {
   const a = document.createElement('a');
   const stamp = new Date().toISOString().slice(0,10);
   a.href = url;
-  a.download = `topic-review-study-data-${stamp}.json`;
+  a.download = `orbguide-study-data-${stamp}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -14381,7 +14381,7 @@ $('importDataFile').onchange = e => {
     let parsed;
     try{ parsed = JSON.parse(evt.target.result); }
     catch(err){ alert('That file doesn\'t look like a valid backup (couldn\'t parse JSON).'); e.target.value = ''; return; }
-    if(!parsed || parsed.app !== 'topicReview' || !parsed.data){
+    if(!parsed || parsed.app !== 'orbguide' || !parsed.data){
       alert('That file doesn\'t look like an OrbGuide backup.');
       e.target.value = '';
       return;
@@ -14512,7 +14512,7 @@ function renderShareSetsPicker(){
   $('shareSetsExportBtn').addEventListener('click', () => {
     const ids = checks().filter(c => c.checked).map(c => c.dataset.id);
     if(!ids.length) return;
-    const filename = ids.length === 1 ? `topic-review-set-${slugify(sets[ids[0]].name)}` : `topic-review-shared-sets-${ids.length}`;
+    const filename = ids.length === 1 ? `orbguide-set-${slugify(sets[ids[0]].name)}` : `orbguide-shared-sets-${ids.length}`;
     downloadJSON(collectSetShareData(ids), filename);
   });
 }
@@ -14536,7 +14536,7 @@ $('exportBgBtn').onclick = async () => {
   const a = document.createElement('a');
   const stamp = new Date().toISOString().slice(0,10);
   a.href = url;
-  a.download = `topic-review-background-${stamp}.json`;
+  a.download = `orbguide-background-${stamp}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -14552,7 +14552,7 @@ $('importBgFile').onchange = e => {
     let parsed;
     try{ parsed = JSON.parse(evt.target.result); }
     catch(err){ alert('That background file could not be read.'); e.target.value = ''; return; }
-    if(!parsed || parsed.app !== 'topicReview' || !parsed.data){
+    if(!parsed || parsed.app !== 'orbguide' || !parsed.data){
       alert('That file doesn\'t look like an OrbGuide backup.');
       e.target.value = '';
       return;
@@ -14623,7 +14623,7 @@ async function runStorageCheck(){
 
   // Quick round-trip write/read/remove to catch "no error, but doesn't
   // actually persist" cases some restricted iOS contexts produce.
-  const probeKey = '__topicReviewStorageProbe__';
+  const probeKey = '__orbguideStorageProbe__';
   const probeVal = String(Date.now());
   const wroteOk = lsSet(probeKey, probeVal);
   const readBack = lsGet(probeKey);
@@ -15895,7 +15895,7 @@ $('editBtn').onclick = () => {
     {label:'Quiz answers', actions:['optionA','optionB','optionC','optionD']},
     {label:'Menu navigation', actions:['confirm']}
   ];
-  const KEY_MAP_KEY = 'topicReviewKeyMap';
+  const KEY_MAP_KEY = 'orbguideKeyMap';
   const CAPTURE_TIMEOUT_MS = 10000;
 
   // action -> the custom e.key value bound to it, or null if unset.
@@ -16105,7 +16105,7 @@ document.addEventListener('keydown', e => {
     {label:'Shortcuts', actions:SHORTCUT_ACTIONS}
   ];
   const DEFAULT_MAP = {optionA:1, optionB:0, optionC:3, optionD:2, confirm:1};
-  const MAP_KEY = 'topicReviewGamepadMap';
+  const MAP_KEY = 'orbguideGamepadMap';
   const CAPTURE_TIMEOUT_MS = 10000;
 
   let gpMap = Object.assign({}, DEFAULT_MAP);
@@ -16404,7 +16404,7 @@ document.addEventListener('keydown', e => {
 <script>
 /* ===== JS-04 NAVIGATION / SCREEN CONTROL (cont'd): zoom/scale toolbar — not its own category in the original map, grouped here since it's page-level chrome, not a theme/quiz/data concern ===== */
 document.addEventListener('DOMContentLoaded',function(){
- let scale=parseFloat(lsGet('topicReviewScale')||'1');
+ let scale=parseFloat(lsGet('orbguideScale')||'1');
  function apply(){
    document.querySelector('.app-shell').style.transform='scale('+scale+')';
    // Always anchor from top-center so zooming visually grows/shrinks from
@@ -16422,9 +16422,9 @@ document.addEventListener('DOMContentLoaded',function(){
    document.body.style.paddingBottom = (toolbarSpace * scale) + 'px';
  }
  apply();
- document.getElementById('zoomIn').onclick=function(){scale=Math.min(1.6,scale+0.1);lsSet('topicReviewScale',scale);apply();};
- document.getElementById('zoomOut').onclick=function(){scale=Math.max(0.8,scale-0.1);lsSet('topicReviewScale',scale);apply();};
- document.getElementById('zoomReset').onclick=function(){scale=1;lsSet('topicReviewScale',scale);apply();};
+ document.getElementById('zoomIn').onclick=function(){scale=Math.min(1.6,scale+0.1);lsSet('orbguideScale',scale);apply();};
+ document.getElementById('zoomOut').onclick=function(){scale=Math.max(0.8,scale-0.1);lsSet('orbguideScale',scale);apply();};
+ document.getElementById('zoomReset').onclick=function(){scale=1;lsSet('orbguideScale',scale);apply();};
 
  /* =====================================================================
     APPEARANCE — light/dark only.
@@ -16433,10 +16433,10 @@ document.addEventListener('DOMContentLoaded',function(){
     theme-intensity system (theme-*, data-accent, data-intensity) was
     removed along with its Settings UI and CSS. Only Mode remains:
 
-      Mode   body.mode-dark (or not)   topicReview_mode_v1   ('light'|'dark')
+      Mode   body.mode-dark (or not)   orbguide_mode_v1   ('light'|'dark')
     ===================================================================== */
 
- const MODE_KEY = 'topicReview_mode_v1';
+ const MODE_KEY = 'orbguide_mode_v1';
 
  /* ===== JS-09 APPEARANCE (THEME PICKER REMOVED) ===== */
  /* ---- Appearance Mode: light / dark only. ---- */
@@ -16456,7 +16456,7 @@ document.addEventListener('DOMContentLoaded',function(){
  // into the simplified light/dark-only key.
  let savedMode = lsGet(MODE_KEY);
  if(savedMode === null){
-   const legacyDark = lsGet('topicReviewDark');
+   const legacyDark = lsGet('orbguideDark');
    savedMode = legacyDark === '1' ? 'dark' : 'light';
    lsSet(MODE_KEY, savedMode);
  } else if(savedMode === 'system'){
@@ -16636,7 +16636,7 @@ document.addEventListener('DOMContentLoaded',function(){
   // to appear on whichever surface the person is actually looking at, so we
   // hold a reference to both and route showPetBubble() to the visible one.
   const petPageBubble=document.getElementById('petBubble');
-  const PET_KEY='topicReviewVirtualPet_v2';
+  const PET_KEY='orbguideVirtualPet_v2';
   const defaultPet={name:'OrBro',breed:'knight',hunger:80,happy:80,energy:80,clean:80,carePoints:0,lastTick:Date.now()};
   let pet=loadPet(), petMode='home', petAction='stand', petFrameIndex=0;
   let petAnimTimer=null,petWalkRaf=null,petMoveTimer=null,petBubbleTimer=null,petDecayTimer=null;
@@ -17278,7 +17278,7 @@ document.addEventListener('DOMContentLoaded',function(){
     setTimeout(()=>{if(petMode==='quiz'&&!carryDrag)petSay(ctx,1700);},1400);
   }
   let petVisibilityFrame=0;
-  function isPetOnScreenEnabled(){return PET_FEATURE_ENABLED && lsGet('topicReviewPetOnScreen')!=='0'}
+  function isPetOnScreenEnabled(){return PET_FEATURE_ENABLED && lsGet('orbguidePetOnScreen')!=='0'}
   function updatePetVisibility(){
     /* Navigation hides the previous screen before revealing the next one.
        Resolve visibility on the next frame so Home → Quiz never performs a
@@ -17303,7 +17303,7 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 
   /* ===== JS-16 DEVELOPER / DEBUG (small, embedded inside JS-11 Virtual Pet — dev-mode only affects pet visibility) ===== */
-function isDevModeEnabled(){return lsGet('topicReviewDevMode')==='1'}
+function isDevModeEnabled(){return lsGet('orbguideDevMode')==='1'}
   function applyDevModeVisibility(){
     const on=isDevModeEnabled();
     document.querySelectorAll('.dev-only-feature').forEach(el=>el.classList.toggle('hidden',!on));
@@ -17312,7 +17312,7 @@ function isDevModeEnabled(){return lsGet('topicReviewDevMode')==='1'}
   if($('devModeToggle')){
     $('devModeToggle').checked=isDevModeEnabled();
     $('devModeToggle').onchange=e=>{
-      lsSet('topicReviewDevMode',e.target.checked?'1':'0');
+      lsSet('orbguideDevMode',e.target.checked?'1':'0');
       applyDevModeVisibility();
     };
   }
@@ -17320,7 +17320,7 @@ function isDevModeEnabled(){return lsGet('topicReviewDevMode')==='1'}
   if($('petOnScreenToggle')){
     $('petOnScreenToggle').checked=isPetOnScreenEnabled();
     $('petOnScreenToggle').onchange=e=>{
-      lsSet('topicReviewPetOnScreen',e.target.checked?'1':'0');
+      lsSet('orbguidePetOnScreen',e.target.checked?'1':'0');
       updatePetVisibility();
     };
   }
@@ -17388,7 +17388,7 @@ function isDevModeEnabled(){return lsGet('topicReviewDevMode')==='1'}
     // Otherwise, comment on the time of day (skips plain mid-morning).
     return petTimeContext();
   }
-  function isPetAdopted(){return lsGet('topicReviewPetRescueIntroSeen')==='1'}
+  function isPetAdopted(){return lsGet('orbguidePetRescueIntroSeen')==='1'}
   // Exposed so the study-data import handler (defined outside this
   // DOMContentLoaded closure, in the export/import section of the file) can
   // ask the pet to reload itself from localStorage right after an import,
@@ -17583,7 +17583,7 @@ function isDevModeEnabled(){return lsGet('topicReviewDevMode')==='1'}
       pet.breed='knight';
       pet.rescuedAt=Date.now();
       savePet();
-      lsSet('topicReviewPetRescueIntroSeen','1');
+      lsSet('orbguidePetRescueIntroSeen','1');
       loadPetSheet('knight');
       setPetStageState('excited',2600);
       renderPetPanel();
@@ -17628,7 +17628,7 @@ function isDevModeEnabled(){return lsGet('topicReviewDevMode')==='1'}
     pet.breed=introSelectedBreed;
     pet.rescuedAt=Date.now();
     savePet();
-    lsSet('topicReviewPetRescueIntroSeen','1');
+    lsSet('orbguidePetRescueIntroSeen','1');
     $('petIntro').classList.add('hidden');
     syncPetIntroLayout();
     loadPetSheet(introSelectedBreed);
@@ -18643,8 +18643,8 @@ updateNavActiveState();
   /* Embedded UERM exam calendar component. Wrapped in its own IIFE (see
      inside) so none of its function/const names can collide with the rest
      of this file. It reads/writes its own localStorage keys
-     (topicReview_uermExams, topicReview_uermCustomSubjects,
-     topicReview_uermHolidayLayer) and renders into #uermExamCalendar, which lives
+     (orbguide_uermExams, orbguide_uermCustomSubjects,
+     orbguide_uermHolidayLayer) and renders into #uermExamCalendar, which lives
      inside #calendarView. window.uermCalendarRefresh is exposed below so
      the nav handler can force a re-layout once the view becomes visible
      (its first render happens while #calendarView is still hidden, so the
@@ -18738,8 +18738,8 @@ const SAMPLE=[
  {subject:'MED2',exam:'LE 1',date:'2026-08-14',start:'11:00',end:'13:00'}
 ];
 
-function added(){return JSON.parse(localStorage.getItem('topicReview_uermExams')||'[]')}
-function saveAdded(a){lsSet('topicReview_uermExams',JSON.stringify(a))}
+function added(){return JSON.parse(localStorage.getItem('orbguide_uermExams')||'[]')}
+function saveAdded(a){lsSet('orbguide_uermExams',JSON.stringify(a))}
 function exams(){return SAMPLE.concat(added())}
 
 /* ---- Custom subjects: user-added subjects that live alongside the
@@ -18747,8 +18747,8 @@ function exams(){return SAMPLE.concat(added())}
    as {CODE:{name,color}} and merged in wherever SUBJECTS is read for
    display/lookup via allSubjects(). ---- */
 const CUSTOM_SUBJECT_PALETTE=['#0e7490','#9333ea','#b45309','#4d7c0f','#be185d','#0369a1','#a16207','#6d28d9','#15803d','#be123c'];
-function customSubjects(){return JSON.parse(localStorage.getItem('topicReview_uermCustomSubjects')||'{}')}
-function saveCustomSubjects(o){lsSet('topicReview_uermCustomSubjects',JSON.stringify(o))}
+function customSubjects(){return JSON.parse(localStorage.getItem('orbguide_uermCustomSubjects')||'{}')}
+function saveCustomSubjects(o){lsSet('orbguide_uermCustomSubjects',JSON.stringify(o))}
 function allSubjects(){return {...SUBJECTS,...customSubjects()}}
 function addCustomSubject(){
   const name=(prompt('Subject name (e.g. "Family Medicine"):')||'').trim();
@@ -18849,7 +18849,7 @@ function render(){
  SCHOOL.forEach(e=>{
    const el=document.createElement('div');el.className='school-event';el.style.left=(index(e[1])*DAY+2)+'px';el.style.width=(diff(e[1],e[2])+1)*DAY-4+'px';el.textContent=e[0];school.appendChild(el);
  });
- if(localStorage.getItem('topicReview_uermHolidayLayer')!=='off'){
+ if(localStorage.getItem('orbguide_uermHolidayLayer')!=='off'){
    const holidayLabel=document.createElement('div');
    holidayLabel.className='holiday-label';
    holidayLabel.textContent='Philippine holidays';
@@ -18958,7 +18958,7 @@ function saveExam(){
  if(end<=start){alert('End time must be later than start time.');return}
  const a=added();a.push({subject:subjectSelect.value,exam:document.getElementById('exam').value,date,start,end,notes:document.getElementById('notes').value});saveAdded(a);close();render()
 }
-function clearAdded(){if(confirm('Remove all manually added/imported exams?')){localStorage.removeItem('topicReview_uermExams');render()}}
+function clearAdded(){if(confirm('Remove all manually added/imported exams?')){localStorage.removeItem('orbguide_uermExams');render()}}
 
 function deleteExam(){
   const i=Number(document.getElementById('deleteBtn').dataset.index);
@@ -19031,13 +19031,13 @@ renderSubjectsLegend();
 
 const holidayToggle=document.getElementById('holidayToggle');
 function syncHolidayToggle(){
- const on=localStorage.getItem('topicReview_uermHolidayLayer')!=='off';
+ const on=localStorage.getItem('orbguide_uermHolidayLayer')!=='off';
  holidayToggle.textContent=on?'HOLIDAYS ON':'HOLIDAYS OFF';
  holidayToggle.classList.toggle('active',on);
 }
 holidayToggle.addEventListener('click',()=>{
- const on=localStorage.getItem('topicReview_uermHolidayLayer')!=='off';
- localStorage.setItem('topicReview_uermHolidayLayer',on?'off':'on');
+ const on=localStorage.getItem('orbguide_uermHolidayLayer')!=='off';
+ localStorage.setItem('orbguide_uermHolidayLayer',on?'off':'on');
  syncHolidayToggle();render();
 });
 syncHolidayToggle();
